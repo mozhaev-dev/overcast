@@ -1,17 +1,9 @@
 # Overcast
 
-A local podcast production workspace, rebuilt in Python from the Evercast/Siftwave product concept.
+A local Python application for creating personalized podcasts with an external AI agent.
 
-An external agent proposes an episode plan for user approval, researches the approved contents, and prepares a script. The local application manages persistent state, validates workflow transitions and artifacts, and generates audio through a TTS integration. Saved episode materials support subsequent discussion with the agent.
+Define topics with your interests, preferred language, episode length, and presentation format. The agent proposes an episode plan for your approval, researches the selected material, and writes a script. The application manages the workflow and saved artifacts, and generates audio through a text-to-speech service.
 
-This is a real personal project developed through mentoring: the user implements the code, and the mentor explains, reviews, and guides architecture.
+Saved scripts and research remain available for follow-up discussions with the agent.
 
-## Status
-
-PRD approved. No Python implementation or toolchain has been initialized.
-
-- [PRD](docs/prd.md)
-- [Learning and delivery plan](docs/learning-plan.md)
-- [Current checkpoint](PROGRESS.md)
-
-Overcast is a provisional name derived from the current directory. Final naming remains open.
+Built around a CLI, MCP integration, SQLite, and local file storage. Currently in early development.
