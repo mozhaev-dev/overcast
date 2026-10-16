@@ -9,7 +9,7 @@ wheels/
 # Virtual environments
 .venv
 
-# Local product documentation and mentoring context
+# Local product documentation and agent context
 /docs/
 /AGENTS.md
 /PROGRESS.md

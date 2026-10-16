@@ -6,10 +6,12 @@ authors = [
     { name = "s.mozhaev", email = "mozhaev.dev@gmail.com" }
 ]
 requires-python = ">=3.13"
-dependencies = []
+dependencies = [
+    "mcp>=2.3.0",
+]
 
 [project.scripts]
-overcast = "overcast:main"
+overcast = "overcast.mcp_server:main"
 
 [build-system]
 requires = ["uv_build>=0.13.0,<0.14.0"]
@@ -23,7 +25,7 @@ dev = [
 ]
 
 [tool.pyright]
-include = ["src"]
+include = ["src", "tests"]
 pythonVersion = "3.13"
 typeCheckingMode = "strict"
 venvPath = "."
