@@ -24,7 +24,7 @@ def test_cli_init(tmp_path: Path) -> None:
     assert workspace_paths.database_path.parent.is_dir()
 
 
-def test_cli_unsuccess_init(tmp_path: Path) -> None:
+def test_cli_init_reports_file_conflict(tmp_path: Path) -> None:
     workspace = tmp_path / "workspace"
     workspace_paths = WorkspacePaths(workspace)
     executable = shutil.which("overcast")
