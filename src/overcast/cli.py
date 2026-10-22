@@ -17,7 +17,11 @@ def main() -> None:
 
     if args.command == "init":
         workspace_paths = WorkspacePaths(args.workspace)
-        initialize_workspace(workspace_paths)
+        try:
+            initialize_workspace(workspace_paths)
+        except OSError as error:
+            message = f"Can't initialize workspace {args.workspace}: {error}\n"
+            init_parser.exit(status=1, message=message)
 
     elif args.command == "serve":
         serve_mcp()
