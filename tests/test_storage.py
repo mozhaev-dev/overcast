@@ -5,7 +5,7 @@ from pathlib import Path
 
 from pytest import fixture, raises
 
-from overcast.storage import check_database
+from overcast.storage import check_database, initialize_database
 
 
 @fixture
@@ -82,3 +82,23 @@ def test_topics_stores_valid_topic(connection: sqlite3.Connection) -> None:
     row = cursor.fetchone()
 
     assert row == ("test name", 10)
+
+
+def test_initialize_database_persists_schema(tmp_path: Path) -> None:
+    db_path = tmp_path / "app.sqlite"
+    initialize_database(db_path)
+
+    connection = sqlite3.connect(db_path, autocommit=True)
+    try:
+        cursor = connection.execute(
+            """
+                SELECT name FROM sqlite_schema
+                WHERE type = 'table' AND name = 'topics'
+            """
+        )
+        row = cursor.fetchone()
+
+        assert row == ("topics",)
+
+    finally:
+        connection.close()
