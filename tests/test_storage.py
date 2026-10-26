@@ -100,5 +100,58 @@ def test_initialize_database_persists_schema(tmp_path: Path) -> None:
 
         assert row == ("topics",)
 
+        cursor = connection.execute("PRAGMA user_version")
+        row = cursor.fetchone()
+
+        assert row == (1,)
+
+    finally:
+        connection.close()
+
+
+def test_reinitialize_database(tmp_path: Path) -> None:
+    db_path = tmp_path / "app.sqlite"
+    initialize_database(db_path)
+
+    try:
+        connection = sqlite3.connect(db_path, autocommit=True)
+
+        connection.execute(
+            """
+                INSERT INTO topics (name, prompt, language, target_duration_minutes, format, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                "test name",
+                "test prompt",
+                "en",
+                10,
+                "dialogue",
+                "2026-10-22T17:01:10Z",
+                "2026-10-22T17:01:10Z",
+            ),
+        )
+    finally:
+        connection.close()
+
+    initialize_database(db_path)
+
+    try:
+        connection = sqlite3.connect(db_path, autocommit=True)
+
+        cursor = connection.execute(
+            """
+                SELECT name FROM topics
+            """
+        )
+        topic = cursor.fetchone()
+
+        assert topic == ("test name",)
+
+        cursor = connection.execute("PRAGMA user_version")
+        (db_version,) = cursor.fetchone()
+
+        assert db_version == 1
+
     finally:
         connection.close()

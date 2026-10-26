@@ -19,6 +19,18 @@ def initialize_database(db_path: Path) -> None:
 
     try:
         with connection:
-            connection.execute(schema)
+            cursor = connection.execute("PRAGMA user_version")
+            (current_db_version,) = cursor.fetchone()
+
+            if current_db_version == 0:
+                connection.execute(schema)
+                connection.execute("PRAGMA user_version = 1")
+
+            elif current_db_version == 1:
+                pass
+
+            else:
+                raise RuntimeError(f"Unsupported schema version: {current_db_version}")
+
     finally:
         connection.close()
