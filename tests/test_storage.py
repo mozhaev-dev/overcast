@@ -112,10 +112,9 @@ def test_initialize_database_persists_schema(tmp_path: Path) -> None:
 def test_reinitialize_database(tmp_path: Path) -> None:
     db_path = tmp_path / "app.sqlite"
     initialize_database(db_path)
+    connection = sqlite3.connect(db_path, autocommit=True)
 
     try:
-        connection = sqlite3.connect(db_path, autocommit=True)
-
         connection.execute(
             """
                 INSERT INTO topics (name, prompt, language, target_duration_minutes, format, created_at, updated_at)
@@ -135,10 +134,9 @@ def test_reinitialize_database(tmp_path: Path) -> None:
         connection.close()
 
     initialize_database(db_path)
+    connection = sqlite3.connect(db_path, autocommit=True)
 
     try:
-        connection = sqlite3.connect(db_path, autocommit=True)
-
         cursor = connection.execute(
             """
                 SELECT name FROM topics
