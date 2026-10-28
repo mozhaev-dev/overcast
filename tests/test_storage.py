@@ -1,3 +1,4 @@
+import re
 import sqlite3
 from collections.abc import Iterator
 from importlib.resources import files
@@ -5,6 +6,7 @@ from pathlib import Path
 
 from pytest import fixture, raises
 
+from overcast.errors import StorageError
 from overcast.storage import initialize_database
 
 
@@ -136,3 +138,45 @@ def test_reinitialize_database(tmp_path: Path) -> None:
 
     finally:
         connection.close()
+
+
+def test_initialize_database_rejects_newer_schema_version(tmp_path: Path) -> None:
+    db_path = tmp_path / "app.sqlite"
+    connection = sqlite3.connect(db_path)
+    try:
+        connection.execute("PRAGMA user_version = 2")
+    finally:
+        connection.close()
+
+    with raises(
+        StorageError,
+        match=re.escape(f"Database {db_path} has unsupported schema version"),
+    ):
+        initialize_database(db_path)
+
+    connection = sqlite3.connect(db_path)
+    try:
+        cursor = connection.execute("PRAGMA user_version")
+        (db_version,) = cursor.fetchone()
+        assert db_version == 2
+    finally:
+        connection.close()
+
+
+def test_initialize_database_rejects_missing_parent_dir(tmp_path: Path) -> None:
+    db_path = tmp_path / "missing" / "app.sqlite"
+
+    with raises(StorageError, match=re.escape(f"Can't open database {db_path}:")):
+        initialize_database(db_path)
+
+    assert not db_path.parent.exists()
+
+
+def test_initialize_database_rejects_non_database_file(tmp_path: Path) -> None:
+    db_path = tmp_path / "app.sqlite"
+    db_path.write_text("keep me", encoding="utf-8")
+
+    with raises(StorageError, match=re.escape(f"Can't initialize database {db_path}:")):
+        initialize_database(db_path)
+
+    assert db_path.read_text(encoding="utf-8") == "keep me"
