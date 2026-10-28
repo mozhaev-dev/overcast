@@ -44,6 +44,6 @@ def test_cli_init_reports_file_conflict(tmp_path: Path) -> None:
 
     assert workspace_paths.episodes_dir.read_text(encoding="utf-8") == file_content
     assert result.returncode == 1
-    assert "Can't initialize workspace" in result.stderr
+    assert "Can't create directory" in result.stderr
     assert str(workspace) in result.stderr
     assert "Traceback" not in result.stderr

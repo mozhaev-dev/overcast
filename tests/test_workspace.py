@@ -2,6 +2,7 @@ from pathlib import Path
 
 from pytest import raises
 
+from overcast.errors import WorkspaceError
 from overcast.workspace import WorkspacePaths, initialize_workspace
 
 
@@ -19,7 +20,7 @@ def test_initialize_workspace(tmp_path: Path) -> None:
     initialize_workspace(workspace_paths)
 
     assert workspace_paths.database_path.parent.is_dir()
-    assert not workspace_paths.database_path.exists()
+    assert workspace_paths.database_path.exists()
     assert workspace_paths.episodes_dir.is_dir()
 
 
@@ -30,7 +31,7 @@ def test_initialize_workspace_rejects_file_at_episodes_path(tmp_path: Path) -> N
     file_content = "Keep me"
     workspace_paths.episodes_dir.write_text(data=file_content, encoding="utf-8")
 
-    with raises(FileExistsError):
+    with raises(WorkspaceError):
         initialize_workspace(workspace_paths)
 
     assert workspace_paths.episodes_dir.read_text(encoding="utf-8") == file_content

@@ -5,7 +5,7 @@ from pathlib import Path
 
 from pytest import fixture, raises
 
-from overcast.storage import check_database, initialize_database
+from overcast.storage import initialize_database
 
 
 @fixture
@@ -18,23 +18,6 @@ def connection() -> Iterator[sqlite3.Connection]:
         yield connection
     finally:
         connection.close()
-
-
-def test_check_storage(tmp_path: Path) -> None:
-    path = tmp_path / "app.sqlite"
-    result = check_database(path)
-
-    assert path.is_file()
-    assert result == (1,)
-
-
-def test_check_missing_dir(tmp_path: Path) -> None:
-    path = tmp_path / "missing" / "app.sqlite"
-
-    with raises(sqlite3.OperationalError):
-        check_database(path)
-
-    assert not path.parent.exists()
 
 
 def test_topics_rejects_zero_duration(connection: sqlite3.Connection) -> None:

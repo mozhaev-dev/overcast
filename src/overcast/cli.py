@@ -1,6 +1,7 @@
 from argparse import ArgumentParser
 from pathlib import Path
 
+from overcast.errors import AppError
 from overcast.mcp_server import main as serve_mcp
 from overcast.workspace import WorkspacePaths, initialize_workspace
 
@@ -19,8 +20,8 @@ def main() -> None:
         workspace_paths = WorkspacePaths(args.workspace)
         try:
             initialize_workspace(workspace_paths)
-        except OSError as error:
-            message = f"Can't initialize workspace {args.workspace}: {error}\n"
+        except AppError as error:
+            message = f"{error}\n"
             init_parser.exit(status=1, message=message)
 
     elif args.command == "serve":

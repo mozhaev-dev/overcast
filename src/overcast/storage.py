@@ -2,20 +2,15 @@ import sqlite3
 from importlib.resources import files
 from pathlib import Path
 
-
-def check_database(db_path: Path) -> tuple[int] | None:
-    connection = sqlite3.connect(db_path, autocommit=True)
-
-    try:
-        cursor = connection.execute("SELECT 1")
-        return cursor.fetchone()
-    finally:
-        connection.close()
+from overcast.errors import StorageError
 
 
 def initialize_database(db_path: Path) -> None:
     schema = files("overcast").joinpath("schema.sql").read_text(encoding="utf-8")
-    connection = sqlite3.connect(db_path, autocommit=False)
+    try:
+        connection = sqlite3.connect(db_path, autocommit=False)
+    except sqlite3.Error as error:
+        raise StorageError(f"Can't open database {db_path}: {error}") from error
 
     try:
         with connection:
@@ -30,7 +25,11 @@ def initialize_database(db_path: Path) -> None:
                 pass
 
             else:
-                raise RuntimeError(f"Unsupported schema version: {current_db_version}")
-
+                raise StorageError(
+                    f"Database {db_path} has unsupported schema version "
+                    f"{current_db_version}"
+                )
+    except sqlite3.Error as error:
+        raise StorageError(f"Can't initialize database {db_path}: {error}") from error
     finally:
         connection.close()
