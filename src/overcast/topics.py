@@ -23,6 +23,11 @@ MAX_DURATION_MINUTES: Final[int] = 120
 LANG_PATTERN: Final[str] = r"[a-z]{2}"
 
 
+def make_name_key(name: str) -> str:
+    """Return the case-insensitive key that makes topic names unique."""
+    return name.strip().casefold()
+
+
 @dataclass(frozen=True, kw_only=True, slots=True)
 class TopicSettings:
     name: str
@@ -33,7 +38,7 @@ class TopicSettings:
 
     @property
     def name_key(self) -> str:
-        return self.name.casefold()
+        return make_name_key(self.name)
 
     @classmethod
     def parse(

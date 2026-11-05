@@ -13,6 +13,10 @@ class StorageError(AppError):
     """Storage exception"""
 
 
+class IdCollisionError(StorageError):
+    """Id collision exception"""
+
+
 @dataclass(frozen=True)
 class FieldIssue:
     field: str
