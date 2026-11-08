@@ -8,7 +8,22 @@ from pathlib import Path
 from pytest import MonkeyPatch, fixture, mark, raises
 
 from overcast.errors import StorageError
-from overcast.storage import connect, initialize_database, migrate
+from overcast.storage import Storage, connect, initialize_database, migrate
+
+
+class Boom(Exception):
+    """Exception raised by tests to check that it propagates unchanged"""
+
+
+@fixture
+def db_path(tmp_path: Path) -> Path:
+    db_path = tmp_path / "app.sqlite"
+    initialize_database(db_path)
+
+    with closing(sqlite3.connect(db_path, autocommit=True)) as connection:
+        connection.execute("CREATE TABLE notes (text TEXT)")
+
+    return db_path
 
 
 @fixture
@@ -277,3 +292,101 @@ def test_migrate_rejects_unsupported_version(
     ).fetchall()
 
     assert tables == []
+
+
+def test_storage_commit_persists_changes(db_path: Path) -> None:
+    with Storage(db_path) as storage:
+        storage.connection.execute("INSERT INTO notes VALUES ('keep me')")
+        storage.commit()
+
+    assert _count_notes(db_path) == 1
+
+
+def test_storage_discards_uncommitted_changes(db_path: Path) -> None:
+    with Storage(db_path) as storage:
+        storage.connection.execute("INSERT INTO notes VALUES ('discard me')")
+
+    assert _count_notes(db_path) == 0
+
+
+def test_storage_rolls_back_on_exception(db_path: Path) -> None:
+    with raises(Boom), Storage(db_path) as storage:
+        storage.connection.execute("INSERT INTO notes VALUES ('discard me')")
+        raise Boom
+
+    assert _count_notes(db_path) == 0
+
+
+def test_storage_closes_connection_on_exit(db_path: Path) -> None:
+    with Storage(db_path) as storage:
+        connection = storage.connection
+
+    with raises(sqlite3.ProgrammingError, match="closed database"):
+        connection.execute("SELECT 1")
+
+
+def test_storage_closes_connection_on_exception(db_path: Path) -> None:
+    storage = Storage(db_path)
+
+    with raises(Boom), storage:
+        raise Boom
+
+    with raises(sqlite3.ProgrammingError, match="closed database"):
+        storage.connection.execute("SELECT 1")
+
+
+def test_storage_rejects_missing_database(tmp_path: Path) -> None:
+    db_path = tmp_path / "app.sqlite"
+
+    with (
+        raises(StorageError, match=re.escape(f"Can't open database {db_path}:")),
+        Storage(db_path),
+    ):
+        pass
+
+    assert not db_path.exists()
+
+
+def test_storage_rejects_uninitialized_database(tmp_path: Path) -> None:
+    db_path = tmp_path / "app.sqlite"
+    db_path.touch()
+
+    with (
+        raises(StorageError, match=re.escape(f"Database {db_path} is not initialized")),
+        Storage(db_path),
+    ):
+        pass
+
+
+def test_storage_rejects_non_database_file(tmp_path: Path) -> None:
+    db_path = tmp_path / "app.sqlite"
+    db_path.write_text("keep me", encoding="utf-8")
+
+    with (
+        raises(StorageError, match=re.escape(f"Can't open database {db_path}:")),
+        Storage(db_path),
+    ):
+        pass
+
+    assert db_path.read_text(encoding="utf-8") == "keep me"
+
+
+def test_storage_rejects_unsupported_schema_version(db_path: Path) -> None:
+    with closing(sqlite3.connect(db_path, autocommit=True)) as connection:
+        connection.execute("PRAGMA user_version = 2")
+
+    with (
+        raises(
+            StorageError,
+            match=re.escape(f"Database {db_path} has unsupported schema version 2"),
+        ),
+        Storage(db_path),
+    ):
+        pass
+
+
+def _count_notes(db_path: Path) -> int:
+    with closing(sqlite3.connect(db_path)) as connection:
+        (count,) = connection.execute("SELECT count(*) FROM notes").fetchone()
+
+    return count
